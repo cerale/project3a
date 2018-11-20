@@ -28,6 +28,8 @@ int main(int argc, char** argv) {
         fprintf(stderr, "Incorrect usage of the program. Please use the program in the following format: ./lab3a FILE_SYSTEM_IMAGE\n");
         exit(1);
     }
-    printf("%s\n", argv[0]);
+    printf("%s\n", argv[1]);
     if (debug) debug_print(0);
+
+    exit(0); //Successful exit
 }
