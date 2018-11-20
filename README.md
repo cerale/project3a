@@ -1,3 +1,0 @@
-# project3a
-
-%rip
