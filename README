@@ -7,6 +7,10 @@ ID: 104844623,804585999
 ------------------
 Within this submission are the following files:
 lab3a.c
+This program has the following exit codes.
+0 . . . analysis successful
+1 . . . bad arguments
+2 . . . corruption detected or other processing errors
 
 Makefile
 Builds all the executables and has the following targets:
