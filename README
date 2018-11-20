@@ -1,0 +1,22 @@
+NAME: Alejandra Cervantes,Ryan Miyahara
+EMAIL: alecer@ucla.edu,rmiyahara144@gmail.com
+ID: 104844623,804585999
+
+------------------
+| Included Files |
+------------------
+Within this submission are the following files:
+lab3a.c
+
+Makefile
+Builds all the executables and has the following targets:
+default
+Compiles lab3a.c with the appropriate flags.
+clean
+Deletes all files lab3a creates.
+dist
+Creates the submission tarball.
+
+--------------
+| References |
+--------------
