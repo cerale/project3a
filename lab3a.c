@@ -20,8 +20,8 @@ int mount_fd;
 int superblock_offset = 1024;
 struct ext2_super_block thuper;
 __uint32_t block_count;
-__uint32_t inode_count;
 __uint32_t block_size;
+__uint32_t inode_count;
 __uint32_t inode_size;
 struct ext2_group_desc groupie;
 struct ext2_inode inode;
@@ -49,18 +49,17 @@ void group_summary() {
     return;
 }
 
-void free_blocks() {
-    __uint32_t block_bitmap = groupie.bg_block_bitmap;
-    for (__uint32_t i = 0; i < block_count; i++) {
+void free_check(__uint32_t bitmap, __uint32_t count, char xdlmao) {
+    for (__uint32_t i = 0; i < count; i++) {
         unsigned char offset = (i >> 3) & 255;
         unsigned char buffer;
-        if (pread(mount_fd, &buffer, sizeof(unsigned char), block_bitmap * block_size + offset) < 0) {
-            fprintf(stderr, "Unable to pread for free blocks.\nError message: %s\nError number: %d\n", strerror(errno), errno);
+        if (pread(mount_fd, &buffer, sizeof(unsigned char), bitmap * block_size + offset) < 0) {
+            fprintf(stderr, "Unable to pread for free check.\nError message: %s\nError number: %d\n", strerror(errno), errno);
             exit(2);
         }
         bool not_free = ((buffer >> (i & 7)) & 1);
         if (!(not_free))
-            fprintf(stdout, "BFREE,%d\n", i + 1);
+            fprintf(stdout, "%cFREE,%d\n", xdlmao, i + 1);
     }
     return;
 }
@@ -79,7 +78,8 @@ int main(int argc, char** argv) {
 
     superblock_summary();
     group_summary();
-    free_blocks();
+    free_check(groupie.bg_block_bitmap, block_count, 'B');
+    free_check(groupie.bg_inode_bitmap, inode_count, 'I');
 
     exit(0); //Successful exit
 }
