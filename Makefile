@@ -8,7 +8,7 @@ endif
 
 default:
 	gcc -Wall -Wextra -g lab3a.c -o lab3a
-	
+
 clean:
 	rm -f ./lab3a-804585999.tar.gz ./lab3a
 
