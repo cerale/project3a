@@ -58,9 +58,9 @@ void free_blocks() {
             fprintf(stderr, "Unable to pread for free blocks.\nError message: %s\nError number: %d\n", strerror(errno), errno);
             exit(2);
         }
-        bool is_free = ((buffer >> (i & 7)) & 1);
-        if (!(is_free))
-            fprintf(stdout, "BREE,%d\n", i + 1);
+        bool not_free = ((buffer >> (i & 7)) & 1);
+        if (!(not_free))
+            fprintf(stdout, "BFREE,%d\n", i + 1);
     }
     return;
 }
