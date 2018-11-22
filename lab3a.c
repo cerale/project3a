@@ -84,6 +84,18 @@ void matryoshka_mother(__uint32_t parent, __uint32_t offset, int level) {
     return;
 }
 
+void indirect_block_reference0(__uint32_t block_num, __uint32_t inode_num) { //TODO
+    return;
+}
+
+void indirect_block_reference1(__uint32_t block_num, __uint32_t inode_num) { //TODO
+    return;
+}
+
+void indirect_block_reference2(__uint32_t block_num, __uint32_t inode_num) { //TODO
+    return;
+}
+
 void directory_entries(__uint32_t parent, __uint32_t offset) {
     matryoshka_baby(parent, 12, offset + 40);
     matryoshka_mother(parent, offset + 40 + 48, 0);
@@ -170,7 +182,9 @@ void inode_summary(__uint32_t count){
             directory_entries(i + 1, block_size * (groupie.bg_inode_table - 1) + i * (sizeof(struct ext2_inode)) + 1024);
 
         if (!(file_type == 's' && inode.i_size < 60)){
-            // Do indirect stuff here
+            if (inode.i_block[12]) indirect_block_reference0(inode.i_block[12], i + 1);
+            if (inode.i_block[13]) indirect_block_reference1(inode.i_block[13], i + 1);
+            if (inode.i_block[14]) indirect_block_reference2(inode.i_block[14], i + 1);
         }
     }
     return;
