@@ -85,10 +85,43 @@ void matryoshka_mother(__uint32_t parent, __uint32_t offset, int level) {
 }
 
 void indirect_block_reference0(__uint32_t block_num, __uint32_t inode_num) { //TODO
+  __uint32_t offset = block_num * block_size;
+  __uint32_t block_value; 
+  __uint32_t i;
+  for (i = 0; i < block_size / 4; i++){
+    if (pread(mount_fd, &block_value, sizeof(block_value), offset + i*4) < 0)
+      print_error_and_exit("Unable to pread for indirect level 1");
+    if (block_value)
+      fprintf(stdout, "INDIRECT,%u,%u,%u,%u,%u\n", inode_num, 1, i + 12, block_num, block_value);
+  }
     return;
 }
 
 void indirect_block_reference1(__uint32_t block_num, __uint32_t inode_num) { //TODO
+  __uint32_t offset_1 = block_num * block_size;
+  __uint32_t offset, block_value_1, block_value, i, j; 
+  for (i = 0; i < block_size / 4; i++){
+    if (pread(mount_fd, &block_value_1, sizeof(block_value_1), offset_1 + i * 4) < 0)
+      print_error_and_exit("Unable to pread for indirect level 2");
+
+    offset = block_value_1 * block_size; 
+    
+    if (block_value_1){
+      fprintf(stdout, "INDIRECT,%u,%u,%u,%u,%u\n", inode_num, 2,  12 + block_size / 4 + i * block_size / 4,
+	      block_num, block_value_1);
+      
+      for(j = 0; j < block_size / 4; j++){
+	if (pread(mount_fd, &block_value, sizeof(block_value), offset + j * 4) < 0)
+	  print_error_and_exit("Unable to pread for indirect level 2.2");
+
+	if (block_value)
+	  fprintf(stdout, "INDIRECT,%u,%u,%u,%u,%u\n", inode_num, 1, 
+		  12 + block_size / 4 + i * block_size / 4 + j, block_value_1, block_value);
+      }
+    }
+    
+  }
+
     return;
 }
 
