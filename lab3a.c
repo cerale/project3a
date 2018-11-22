@@ -33,9 +33,63 @@ void print_error_and_exit(char *msg){
   exit(2);
 }
 
-char * format_time(){
-  
-  return "TIME";
+char* format_time(__uint32_t clock){
+    time_t casted_time = clock;
+    struct tm* time = gmtime(&casted_time);
+    char* ans = (char*)malloc(sizeof(char) * 128);
+    //strftime function help here: http://man7.org/linux/man-pages/man3/strftime.3.html
+    strftime(ans, 128, "%m/%d/%y %H:%M:%S", time);
+    return ans;
+}
+
+void matryoshka_baby(__uint32_t parent, __uint32_t loop, __uint32_t offset) {
+    __uint32_t i;
+    for (i = 0; i < loop; i++) {
+        int hold_me;
+        if (pread(mount_fd, &hold_me, 4, offset + i * 4) < 0)
+            print_error_and_exit("Unable to pread for directory entries.");
+        if (hold_me) {
+            __uint32_t curr_offset = block_size * hold_me;
+            __uint32_t init_offset = curr_offset;
+            while (curr_offset < init_offset + block_size) {
+                if (pread(mount_fd, &dir, sizeof(struct ext2_dir_entry), curr_offset) < 0)
+                    print_error_and_exit("Unable to pread for directory entries.");
+                __uint32_t inode_num = dir.inode;
+                __uint32_t name_len = dir.name_len;
+                __uint32_t rec_len = dir.rec_len;
+                curr_offset += rec_len;
+                if (!(inode_num)) continue;
+                fprintf(stdout, "DIRENT,%u,%u,%u,%u,%u,'", parent, (curr_offset - init_offset), inode_num, rec_len, name_len);
+                __uint32_t j;
+                for (j = 0; j < name_len; j++)
+                    fprintf(stdout, "%c", dir.name[j]);
+                fprintf(stdout, "'\n");
+            }
+        }
+    }
+    return;
+}
+
+void matryoshka_mother(__uint32_t parent, __uint32_t offset, int level) {
+    int hold_me;
+    if (pread(mount_fd, &hold_me, 4, offset) < 0)
+        print_error_and_exit("Unable to pread for directory entries.");
+    if (hold_me && !(level))
+        matryoshka_baby(parent, block_size / 4, block_size * hold_me);
+    else if (hold_me) {
+        __uint32_t i;
+        for (i = 0; i < block_count / 4; i++)
+            matryoshka_mother(parent, hold_me * block_size + i * 4, level--);
+    }
+    return;
+}
+
+void directory_entries(__uint32_t parent, __uint32_t offset) {
+    matryoshka_baby(parent, 12, offset + 40);
+    matryoshka_mother(parent, offset + 40 + 48, 0);
+    matryoshka_mother(parent, offset + 40 + 52, 1);
+    matryoshka_mother(parent, offset + 40 + 56, 2);
+    return;
 }
 void superblock_summary() {
     if (pread(mount_fd, &thuper, sizeof(struct ext2_super_block), superblock_offset) < 0)
@@ -75,46 +129,51 @@ void free_check(__uint32_t bitmap, __uint32_t count, char xdlmao) {
 void inode_summary(__uint32_t count){
     __uint32_t i;
     for (i = 0; i < count; i++){
-    unsigned char offset = (i >> 3) & 255;
-    unsigned char buffer;
-    if (pread(mount_fd, &buffer, sizeof(unsigned char), groupie.bg_inode_bitmap * block_size + offset) < 0)
-      print_error_and_exit("Unable to pread inode summary."); 
+        unsigned char offset = (i >> 3) & 255;
+        unsigned char buffer;
+        if (pread(mount_fd, &buffer, sizeof(unsigned char), groupie.bg_inode_bitmap * block_size + offset) < 0)
+            print_error_and_exit("Unable to pread inode summary."); 
 
-    bool not_free = ((buffer >> (i & 7)) & 1); 
-    if (!(not_free))
-      (void) i; 
+        bool not_free = ((buffer >> (i & 7)) & 1); 
+        if (!(not_free))
+            (void) i; 
 
-    if (pread(mount_fd, &inode, inode_size, 1024 + (groupie.bg_inode_table - 1) * block_size 
-	      + i * sizeof(struct ext2_inode)) < 0)
-      print_error_and_exit("Unable to pread inode summary 2."); 
-    
-    char file_type = '?'; 
-    if (inode.i_mode == 0 || inode.i_links_count == 0) continue; 
-    if ((inode.i_mode & 0xF000) == 0xA000) file_type = 's';
-    else if ((inode.i_mode & 0xF000) == 0x8000) file_type = 'f';
-    else if ((inode.i_mode & 0xF000) == 0x4000){ 
-      file_type = 'd';
-      // Do directory stuff here
+        if (pread(mount_fd, &inode, inode_size, 1024 + (groupie.bg_inode_table - 1) * block_size + i * sizeof(struct ext2_inode)) < 0)
+            print_error_and_exit("Unable to pread inode summary 2."); 
+
+        char file_type = '?'; 
+        if (inode.i_mode == 0 || inode.i_links_count == 0) continue; 
+        if ((inode.i_mode & 0xF000) == 0xA000) file_type = 's';
+        else if ((inode.i_mode & 0xF000) == 0x8000) file_type = 'f';
+        else if ((inode.i_mode & 0xF000) == 0x4000) file_type = 'd';
+
+        char* c_time = format_time(inode.i_ctime);
+        char* m_time = format_time(inode.i_mtime);
+        char* a_time = format_time(inode.i_atime);
+        fprintf(stdout, "INODE,%d,%c,%o,%u,%u,%u,%s,%s,%s,%d,%d", 
+            i+1, file_type, (inode.i_mode & 0xFFF), inode.i_uid, inode.i_gid, 
+            inode.i_links_count, c_time, m_time,
+            a_time, inode.i_size, inode.i_blocks);
+        free (c_time);
+        free (m_time);
+        free (a_time);
+
+        if (!(file_type == 's' && inode.i_size < 60)) {
+            __uint32_t j;
+            for (j = 0; j < 15; j++)
+                fprintf(stdout, ",%u", inode.i_block[j]);
+        }
+        else fprintf(stdout, ",%u", inode.i_block[0]);
+        fprintf(stdout, "\n");
+
+        if (file_type == 'd')
+            directory_entries(i + 1, block_size * (groupie.bg_inode_table - 1) + i * (sizeof(struct ext2_inode)) + 1024);
+
+        if (!(file_type == 's' && inode.i_size < 60)){
+            // Do indirect stuff here
+        }
     }
-
-    fprintf(stdout, "INODE,%d,%c,%o,%u,%u,%u,%s,%s,%s,%d,%d", 
-	    i+1, file_type, (inode.i_mode & 0xFFF), inode.i_uid, inode.i_gid, 
-	    inode.i_links_count, format_time(inode.i_ctime), format_time(inode.i_mtime),
-	    format_time(inode.i_atime), inode.i_size, inode.i_blocks);
-    
-    if (!(file_type == 's' && inode.i_size < 60)) {
-        __uint32_t j;
-        for (j = 0; j < 15; j++)
-            fprintf(stdout, ",%u", inode.i_block[j]);
-    }
-    else fprintf(stdout, ",%u", inode.i_block[0]);
-    fprintf(stdout, "\n");
-
-    if (!(file_type == 's' && inode.i_size < 60)){
-      // Do indirect stuff here
-    }
-  }
-    return; 
+    return;
 }
 
 int main(int argc, char** argv) {
