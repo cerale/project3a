@@ -123,7 +123,6 @@ void indirect_block_reference2(__uint32_t block_num, __uint32_t inode_num) {
             }
         }
     }
-    
     return;
 }
 
