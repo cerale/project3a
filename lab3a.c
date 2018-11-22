@@ -259,10 +259,14 @@ int main(int argc, char** argv) {
         fprintf(stderr, "Incorrect usage of the program. Please use the program in the following format: ./lab3a FILE_SYSTEM_IMAGE\n");
         exit(1);
     }
+    char* check = argv[1];
+    char 
     
     mount_fd = open(argv[1], O_RDONLY);
-    if (mount_fd < 0)
-      print_error_and_exit("Unable to mount file system.");
+    if (mount_fd < 0) {
+        fprintf(stderr, "Invalid argument.\n");
+        exit(1);
+    }
       
     superblock_summary();
     group_summary();
