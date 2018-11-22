@@ -92,7 +92,38 @@ void indirect_block_reference1(__uint32_t block_num, __uint32_t inode_num) { //T
     return;
 }
 
-void indirect_block_reference2(__uint32_t block_num, __uint32_t inode_num) { //TODO
+void indirect_block_reference2(__uint32_t block_num, __uint32_t inode_num) {
+    __uint32_t offset2 = block_num * block_size;
+    __uint32_t i;
+    for (i = 0; i < block_size / 4; i++) {
+        __uint32_t block_num1;
+        if (pread(mount_fd, &block_num1, sizeof(__uint32_t), offset2 + i * 4) < 0)
+            print_error_and_exit("Unable to pread for indirect block references.");
+        __uint32_t offset1 = block_num1 * block_size;
+        if (block_num1) {
+            __uint32_t block_passed = (block_size * block_size / 16) + (block_size / 4) + 12 + i * (block_size * block_size / 8);
+            fprintf(stdout, "INDIRECT,%u,3,%u,%u,%u\n", inode_num, block_passed, block_num, block_num1);
+            __uint32_t j;
+            for (j = 0; j < block_size / 4; j++) {
+                __uint32_t block_num0;
+                if (pread(mount_fd, &block_num0, sizeof(__uint32_t), offset1 + j * 4) < 0)
+                    print_error_and_exit("Unable to pread for indirect block references.");
+                __uint32_t offset0 = block_num0 * block_size;
+                if (block_num0) {
+                    fprintf(stdout, "UNDIRECT,%u,2,%u,%u,%u\n", inode_num, block_passed + j * block_size / 4, block_num1, block_num0);
+                    __uint32_t k;
+                    for (k = 0; k < block_size / 4; k++) {
+                        __uint32_t block_rip;
+                        if (pread(mount_fd, &block_rip, sizeof(__uint32_t), offset0 + k * 4) < 0)
+                            print_error_and_exit("Unable to pread for indirect block references.");
+                        if (block_rip)
+                            fprintf(stdout, "INDIRECT,%u,1,%u,%u,%u\n", inode_num, block_passed + j * block_size / 4 + k, block_num0, block_rip);
+                    }
+                }
+            }
+        }
+    }
+    
     return;
 }
 
