@@ -13,4 +13,4 @@ clean:
 	rm -f ./lab3a-804585999.tar.gz ./lab3a
 
 dist: default
-	tar -zcf lab3a-804585999.tar.gz ./ext2_fs.h ./Makefile ./README ./lab3a.c
+	tar -zcf lab3a-804585999.tar.gz ./Makefile ./README ./lab3a.c ./ext2_fs.h
