@@ -259,8 +259,6 @@ int main(int argc, char** argv) {
         fprintf(stderr, "Incorrect usage of the program. Please use the program in the following format: ./lab3a FILE_SYSTEM_IMAGE\n");
         exit(1);
     }
-    char* check = argv[1];
-    char 
     
     mount_fd = open(argv[1], O_RDONLY);
     if (mount_fd < 0) {

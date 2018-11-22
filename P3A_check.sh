@@ -254,6 +254,7 @@ fi
 for t in SUPER GROUP BFREE IFREE INODE DIRENT INDIRECT
 do
 	grep $t $OUTPUT | sort > GOLDEN.csv
+	cp GOLDEN.csv ~/GOLDEN.csv
 	grep $t TEST.csv > TEST
 	cmp GOLDEN.csv TEST
 	if [ $? -ne 0 ]; then
