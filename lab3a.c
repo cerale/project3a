@@ -57,9 +57,10 @@ void matryoshka_baby(__uint32_t parent, __uint32_t loop, __uint32_t offset) {
                 __uint32_t inode_num = dir.inode;
                 __uint32_t name_len = dir.name_len;
                 __uint32_t rec_len = dir.rec_len;
+                __uint32_t diff = curr_offset - init_offset;
                 curr_offset += rec_len;
                 if (!(inode_num)) continue;
-                fprintf(stdout, "DIRENT,%u,%u,%u,%u,%u,'", parent, (curr_offset - init_offset), inode_num, rec_len, name_len);
+                fprintf(stdout, "DIRENT,%u,%u,%u,%u,%u,'", parent, diff, inode_num, rec_len, name_len);
                 __uint32_t j;
                 for (j = 0; j < name_len; j++)
                     fprintf(stdout, "%c", dir.name[j]);
